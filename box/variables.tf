@@ -13,7 +13,11 @@ variable "ram" {
 }
 
 variable "hdd" {
-  default = 200
+  default = 50
+}
+
+variable "data_hdd" {
+  default = 150
 }
 
 variable "ssh_key" {}

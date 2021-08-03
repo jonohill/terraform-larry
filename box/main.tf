@@ -93,3 +93,17 @@ resource "oci_core_instance" "instance" {
   }
 
 }
+
+resource "oci_core_volume" "data_volume" {
+  compartment_id = var.compartment_id
+  availability_domain = data.oci_identity_availability_domain.ad.name
+
+  display_name = "${var.name}_data"
+  size_in_gbs = var.data_hdd
+}
+
+resource "oci_core_volume_attachment" "data_volume_attachment" {
+  attachment_type = "paravirtualized"
+  instance_id = resource.oci_core_instance.instance.id
+  volume_id = resource.oci_core_volume.data_volume.id
+}

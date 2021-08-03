@@ -6,6 +6,7 @@
 set -e
 
 MAIN_USER=ubuntu
+DATA_VOL_DEV=/dev/sdb
 
 # In here because Oracle rejects a "cert-authority" file
 set_ssh_key() {
@@ -17,6 +18,26 @@ set_ssh_key() {
         chown "$MAIN_USER:$MAIN_USER" "$auth_key_file"
         chmod 600 "$auth_key_file"
     fi
+}
+
+ensure_data_vol() {
+    # Await device attachment
+    while [ ! -b "$DATA_VOL_DEV" ]; do
+        echo "Waiting for data volume to attach..."
+        sleep 1
+    done
+    # Partition exists?
+    PART_DEV="$${DATA_VOL_DEV}1"
+    if [ ! -b "$PART_DEV" ]; then
+        echo 'type=83' | sfdisk "$DATA_VOL_DEV"
+        mkfs.ext4 "$PART_DEV"
+    fi
+    # fstab update needed?
+    if ! grep "$PART_DEV" </etc/fstab; then
+        echo "$PART_DEV /mnt/data ext4 defaults,_netdev,nofail 0 2" >>/etc/fstab
+    fi
+    mkdir -p /mnt/data
+    mount -a
 }
 
 ensure_docker() {
@@ -65,6 +86,7 @@ compose_up() {
 # The arguments here must be interpolated by terraform
 # shellcheck disable=SC2154
 set_ssh_key "${ssh_key}"
+ensure_data_vol
 ensure_docker
 ensure_sops
 # shellcheck disable=SC2154
