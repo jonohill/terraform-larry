@@ -18,7 +18,3 @@ module "box" {
   compose_repo     = var.compose_repo
   compose_sops_key = var.compose_sops_key
 }
-
-output "ip" {
-  value = module.box.public_ip
-}

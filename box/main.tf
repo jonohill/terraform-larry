@@ -89,7 +89,6 @@ resource "oci_core_instance" "instance" {
   }
 
   create_vnic_details {
-    assign_public_ip = true
     subnet_id        = oci_core_subnet.subnet.id
   }
 
