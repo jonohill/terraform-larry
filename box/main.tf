@@ -4,6 +4,10 @@ terraform {
       source  = "hashicorp/oci"
       version = "4.37.0"
     }
+    git = {
+      source = "innovationnorway/git"
+      version = "0.1.3"
+    }
   }
 }
 
@@ -61,6 +65,11 @@ data "oci_core_images" "list" {
   sort_order       = "DESC"
 }
 
+data "git_repository" "compose_repo" {
+  url = var.compose_repo
+  branch = "main"
+}
+
 resource "oci_core_instance" "instance" {
   availability_domain = data.oci_identity_availability_domain.ad.name
   compartment_id      = var.compartment_id
@@ -89,9 +98,9 @@ resource "oci_core_instance" "instance" {
       ssh_key          = var.ssh_key,
       compose_sops_key = var.compose_sops_key,
       compose_repo     = var.compose_repo
+      compose_sha      = data.git_repository.compose_repo.commit_sha
     }))
   }
-
 }
 
 resource "oci_core_volume" "data_volume" {

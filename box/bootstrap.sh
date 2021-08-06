@@ -71,15 +71,22 @@ ensure_sops() {
 }
 
 compose_up() {
+    # This is here to force replacement
+    # shellcheck disable=SC2154
+    echo "Latest hash is ${compose_sha}"
+
     COMPOSE_DIR="/home/$MAIN_USER/compose"
     if [ ! -d "$COMPOSE_DIR" ]; then
         git clone "$1" "$COMPOSE_DIR"
     fi
     cd "$COMPOSE_DIR"
-    git pull
     echo "$2" >key.txt
-    SOPS_AGE_KEY_FILE=key.txt sops exec-env secrets.enc.env 'docker-compose up -d'
-    rm key.txt
+    if [ -x ./up.sh ]; then
+        ./up.sh
+    else
+        git pull
+        SOPS_AGE_KEY_FILE=key.txt sops exec-env secrets.enc.env 'docker-compose up -d'
+    fi
     cd -
 }
 
