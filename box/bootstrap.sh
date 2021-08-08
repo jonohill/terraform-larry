@@ -8,6 +8,11 @@ set -e
 MAIN_USER=ubuntu
 DATA_VOL_DEV=/dev/sdb
 
+# To allow console connection for troubleshooting
+set_user_password() {
+    echo "ubuntu:$1" | chpasswd
+}
+
 # In here because Oracle rejects a "cert-authority" file
 set_ssh_key() {
     ssh_dir="/home/$MAIN_USER/.ssh"
@@ -91,6 +96,8 @@ compose_up() {
 }
 
 # The arguments here must be interpolated by terraform
+# shellcheck disable=SC2154
+set_user_password "${user_password}"
 # shellcheck disable=SC2154
 set_ssh_key "${ssh_key}"
 ensure_data_vol

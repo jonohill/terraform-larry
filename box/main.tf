@@ -5,8 +5,12 @@ terraform {
       version = "4.37.0"
     }
     git = {
-      source = "innovationnorway/git"
+      source  = "innovationnorway/git"
       version = "0.1.3"
+    }
+    random = {
+      source  = "hashicorp/random"
+      version = "3.1.0"
     }
   }
 }
@@ -27,9 +31,9 @@ resource "oci_core_vcn" "vcn" {
   dns_label      = var.name
 }
 
-resource "oci_core_internet_gateway" "ig" {
+resource "oci_core_nat_gateway" "nat_gateway" {
   compartment_id = var.compartment_id
-  display_name   = "${var.name}_ig"
+  display_name   = "${var.name}_ng"
   vcn_id         = oci_core_vcn.vcn.id
 }
 
@@ -40,7 +44,7 @@ resource "oci_core_default_route_table" "route_table" {
   route_rules {
     destination       = "0.0.0.0/0"
     destination_type  = "CIDR_BLOCK"
-    network_entity_id = oci_core_internet_gateway.ig.id
+    network_entity_id = oci_core_nat_gateway.nat_gateway.id
   }
 }
 
@@ -66,8 +70,13 @@ data "oci_core_images" "list" {
 }
 
 data "git_repository" "compose_repo" {
-  url = var.compose_repo
+  url    = var.compose_repo
   branch = "main"
+}
+
+resource "random_password" "user_password" {
+  length  = 32
+  special = false
 }
 
 resource "oci_core_instance" "instance" {
@@ -99,20 +108,21 @@ resource "oci_core_instance" "instance" {
       compose_sops_key = var.compose_sops_key,
       compose_repo     = var.compose_repo
       compose_sha      = data.git_repository.compose_repo.commit_sha
+      user_password    = resource.random_password.user_password.result
     }))
   }
 }
 
 resource "oci_core_volume" "data_volume" {
-  compartment_id = var.compartment_id
+  compartment_id      = var.compartment_id
   availability_domain = data.oci_identity_availability_domain.ad.name
 
   display_name = "${var.name}_data"
-  size_in_gbs = var.data_hdd
+  size_in_gbs  = var.data_hdd
 }
 
 resource "oci_core_volume_attachment" "data_volume_attachment" {
   attachment_type = "paravirtualized"
-  instance_id = resource.oci_core_instance.instance.id
-  volume_id = resource.oci_core_volume.data_volume.id
+  instance_id     = resource.oci_core_instance.instance.id
+  volume_id       = resource.oci_core_volume.data_volume.id
 }
