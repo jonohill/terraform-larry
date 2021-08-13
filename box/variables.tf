@@ -1,7 +1,15 @@
 variable "compartment_id" {}
 
+variable "ad_name" {}
+
+variable "subnet_id" {}
+
 variable "name" {
   default = "free"
+}
+
+variable "shape" {
+  default = "VM.Standard.A1.Flex"
 }
 
 variable "cpus" {

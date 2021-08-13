@@ -10,10 +10,22 @@ locals {
   oci_tenancy_id = regex("tenancy\\s*=\\s*(.+)", data.local_file.oci_config.content)[0]
 }
 
+module "network" {
+  source = "./network"
+
+  name = "free"
+  compartment_id = local.oci_tenancy_id
+}
+
 module "box" {
   source = "./box"
 
   compartment_id   = local.oci_tenancy_id
+  ad_name = module.network.ad_name
+  subnet_id = module.network.subnet_id
+  
+  shape = "VM.Standard.A1.Flex"
+  
   ssh_key          = var.ssh_key
   compose_repo     = var.compose_repo
   compose_sops_key = var.compose_sops_key
