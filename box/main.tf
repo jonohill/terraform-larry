@@ -2,7 +2,7 @@ terraform {
   required_providers {
     oci = {
       source  = "hashicorp/oci"
-      version = "4.37.0"
+      version = "4.40.0"
     }
     git = {
       source  = "innovationnorway/git"
@@ -11,6 +11,14 @@ terraform {
     random = {
       source  = "hashicorp/random"
       version = "3.1.0"
+    }
+    tls = {
+      source  = "hashicorp/tls"
+      version = "3.1.0"
+    }
+    external = {
+      source  = "hashicorp/external"
+      version = "2.1.0"
     }
   }
 }
@@ -34,6 +42,20 @@ resource "random_password" "user_password" {
   special = false
 }
 
+resource "tls_private_key" "ssh_host_key" {
+  algorithm = "ECDSA"
+  ecdsa_curve = "P256"
+}
+
+data "external" "ssh_host_key_cert" {
+  program = ["${path.module}/sign_key.sh"]
+  query = {
+    ca_key       = var.ssh_ca_key
+    host_pub_key = resource.tls_private_key.ssh_host_key.public_key_openssh
+    hostname     = var.name
+  }
+}
+
 resource "oci_core_instance" "instance" {
   availability_domain = var.ad_name
   compartment_id      = var.compartment_id
@@ -54,16 +76,19 @@ resource "oci_core_instance" "instance" {
 
   create_vnic_details {
     subnet_id        = var.subnet_id
-    assign_public_ip = false
+    assign_public_ip = true
   }
 
   metadata = {
     user_data = base64encode(templatefile("${path.module}/bootstrap.sh", {
-      ssh_key          = var.ssh_key,
-      compose_sops_key = var.compose_sops_key,
-      compose_repo     = var.compose_repo
-      compose_sha      = data.git_repository.compose_repo.commit_sha
-      user_password    = resource.random_password.user_password.result
+      ssh_host_key      = resource.tls_private_key.ssh_host_key.private_key_pem
+      ssh_host_key_pub  = resource.tls_private_key.ssh_host_key.public_key_openssh
+      ssh_host_key_cert = data.external.ssh_host_key_cert.result["cert"]
+      ssh_key           = var.ssh_key,
+      compose_sops_key  = var.compose_sops_key,
+      compose_repo      = var.compose_repo
+      compose_sha       = data.git_repository.compose_repo.commit_sha
+      user_password     = resource.random_password.user_password.result
     }))
   }
 }

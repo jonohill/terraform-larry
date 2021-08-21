@@ -10,7 +10,31 @@ resource "oci_core_vcn" "vcn" {
   dns_label      = var.name
 }
 
-resource "oci_core_nat_gateway" "nat_gateway" {
+resource "oci_core_default_security_list" "default_security_list" {
+  compartment_id             = var.compartment_id
+  manage_default_resource_id = resource.oci_core_vcn.vcn.default_security_list_id
+
+  egress_security_rules {
+    destination = "0.0.0.0/0"
+    protocol    = "all"
+  }
+
+  dynamic "ingress_security_rules" {
+    for_each = toset(var.udp_ports)
+
+    content {
+      protocol = "17" # udp
+      source   = "0.0.0.0/0"
+
+      udp_options {
+        min = ingress_security_rules.key
+        max = ingress_security_rules.key
+      }
+    }
+  }
+}
+
+resource "oci_core_internet_gateway" "internet_gateway" {
   compartment_id = var.compartment_id
   display_name   = "${var.name}_ng"
   vcn_id         = oci_core_vcn.vcn.id
@@ -23,7 +47,7 @@ resource "oci_core_default_route_table" "route_table" {
   route_rules {
     destination       = "0.0.0.0/0"
     destination_type  = "CIDR_BLOCK"
-    network_entity_id = oci_core_nat_gateway.nat_gateway.id
+    network_entity_id = oci_core_internet_gateway.internet_gateway.id
   }
 }
 

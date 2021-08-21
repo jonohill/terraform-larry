@@ -30,6 +30,10 @@ variable "data_hdd" {
 
 variable "ssh_key" {}
 
+variable "ssh_ca_key" {
+  sensitive = true
+}
+
 variable "compose_repo" {}
 
 variable "compose_sops_key" {

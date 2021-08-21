@@ -13,6 +13,18 @@ set_user_password() {
     echo "ubuntu:$1" | chpasswd
 }
 
+set_ssh_host_key() {
+    echo "$1" >/etc/ssh/host_key
+    echo "$2" >/etc/ssh/host_key.pub
+    echo "$3" >/etc/ssh/host_key-cert.pub
+
+    echo "HostKey /etc/ssh/host_key" >>/etc/ssh/sshd_config
+    echo "HostCertificate /etc/ssh/host_key-cert.pub" >>/etc/ssh/sshd_config
+    chmod 600 /etc/ssh/host_key*
+
+    systemctl restart sshd
+}
+
 # In here because Oracle rejects a "cert-authority" file
 set_ssh_key() {
     ssh_dir="/home/$MAIN_USER/.ssh"
@@ -96,12 +108,14 @@ compose_up() {
 }
 
 # The arguments here must be interpolated by terraform
-# shellcheck disable=SC2154
-set_user_password "${user_password}"
-# shellcheck disable=SC2154
-set_ssh_key "${ssh_key}"
+# shellcheck disable=SC2016
+set_user_password '${user_password}'
+# shellcheck disable=SC2016
+set_ssh_host_key '${ssh_host_key}' '${ssh_host_key_pub}' '${ssh_host_key_cert}'
+# shellcheck disable=SC2016
+set_ssh_key '${ssh_key}'
 ensure_data_vol
 ensure_docker
 ensure_sops
-# shellcheck disable=SC2154
-compose_up "${compose_repo}" "${compose_sops_key}"
+# shellcheck disable=SC2016
+compose_up '${compose_repo}' '${compose_sops_key}'
