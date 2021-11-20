@@ -114,8 +114,11 @@ set_user_password '${user_password}'
 set_ssh_host_key '${ssh_host_key}' '${ssh_host_key_pub}' '${ssh_host_key_cert}'
 # shellcheck disable=SC2016
 set_ssh_key '${ssh_key}'
+
+echo "vm.max_map_count=262144" >/etc/sysctl.conf
 ensure_data_vol
 ensure_docker
 ensure_sops
+
 # shellcheck disable=SC2016
 compose_up '${compose_repo}' '${compose_sops_key}'
