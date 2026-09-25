@@ -2,7 +2,7 @@ terraform {
   required_providers {
     oci = {
       source  = "hashicorp/oci"
-      version = "4.49.0"
+      version = "9.3.0"
     }
     git = {
       source  = "innovationnorway/git"
